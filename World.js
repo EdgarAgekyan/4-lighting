@@ -71,14 +71,27 @@ var FSHADER_SOURCE = `
       gl_FragColor = vec4(1.0, 0.2, 0.2, 1.0); // error, put redish
     }
 
-    vec3 lightVector = vec3(v_VertPos) - u_lightPos;
+    vec3 lightVector = u_lightPos - vec3(v_VertPos);
     float r = length(lightVector);
-    if (r < 5.0) {
-      gl_FragColor = vec4(1,0,0,1);
-    }
-    else if (r < 10.0) {
-      gl_FragColor = vec4(0,1,0,1);
-    }
+
+    vec3 L = normalize(lightVector);
+    vec3 N = normalize(v_Normal);
+    float nDotL = max(dot(N, L), 0.0);
+    gl_FragColor = gl_FragColor * nDotL;
+    gl_FragColor.a = 1.0;
+
+
+    
+    // gl_FragColor = vec4(vec3(gl_FragColor)/(r*r),1);
+
+
+    // if (r < 5.0) {
+    //   gl_FragColor = vec4(1,0,0,1);
+    // }
+    // else if (r < 10.0) {
+    //   gl_FragColor = vec4(0,1,0,1);
+    // }
+
   }`
 
 // Global Variables
@@ -257,7 +270,7 @@ let g_shiftAnimation = 0;
 let g_normalOn = false;
 // let g_normalOff = false;
 
-let g_lightPos = [0, 1, -2];
+let g_lightPos = [3, 10, 3];
 
 // let g_camera = new Camera(canvas);
 
@@ -1598,7 +1611,7 @@ function renderAllShapes() {
   light.color = [2, 2, 0, 1];
   light.matrix.translate(g_lightPos[0], g_lightPos[1], g_lightPos[2]);
   light.matrix.scale(.4, .4, .4);
-  light.matrix.translate(-.5, 30, -.5);
+  // light.matrix.translate(-.5, 30, -.5);
   light.render();
 
   // Draw the floor
@@ -1606,7 +1619,7 @@ function renderAllShapes() {
   body.color = [1.0, 0.0, 0.0, 1.0];
   body.textureNum = -3;
   body.matrix.translate(0, -5, 0.0);
-  body.matrix.scale(40, 0, 40);
+  body.matrix.scale(40, 1, 40);
   body.matrix.translate(-0.5, 0, -0.5);
   body.render();
 
