@@ -3,8 +3,8 @@ class Camera {
         this.fov = 60;
         this.speed = .1;
         this.alpha = 3;
-        this.eye = new Vector3([0, 0, 0]);
-        this.at = new Vector3([0, 0, -1]);
+        this.eye = new Vector3([6, 3, 5]);
+        this.at = new Vector3([0, 2, -1]);
         this.up = new Vector3([0, 1, 0]);
 
         this.viewMatrix = new Matrix4();

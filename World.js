@@ -4,7 +4,9 @@ var VSHADER_SOURCE = `
   precision mediump float;
   attribute vec4 a_Position;
   attribute vec2 a_UV;
+  attribute vec3 a_Normal;
   varying vec2 v_UV;
+  varying vec3 v_Normal;
   uniform mat4 u_ModelMatrix;
   uniform mat4 u_GlobalRotateMatrix;
   uniform mat4 u_ViewMatrix;
@@ -12,12 +14,14 @@ var VSHADER_SOURCE = `
   void main() {
     gl_Position = u_ProjectionMatrix * u_ViewMatrix * u_GlobalRotateMatrix * u_ModelMatrix * a_Position;
     v_UV = a_UV;
+    v_Normal = a_Normal;
   }`
 
 // Fragment shader program
 var FSHADER_SOURCE = `
   precision mediump float;
   varying vec2 v_UV;
+  varying vec3 v_Normal;
   uniform vec4 u_FragColor;
   uniform sampler2D u_Sampler0;
   uniform sampler2D u_Sampler1;
@@ -29,7 +33,10 @@ var FSHADER_SOURCE = `
   uniform sampler2D u_Sampler7;
   uniform int u_whichTexture;
   void main() {
-    if (u_whichTexture == -2) {
+    if (u_whichTexture == -99) {
+      gl_FragColor = vec4((v_Normal + 1.0)/2.0, 1.0);
+    }
+    else if (u_whichTexture == -2) {
       gl_FragColor = u_FragColor; // Use color
     } else if (u_whichTexture == -1) {
       gl_FragColor = vec4(v_UV, 1.0, 1.0); // Use UV debug color
@@ -66,6 +73,7 @@ let canvas;
 let gl;
 let a_Position;
 let a_UV;
+let a_Normal;
 let u_FragColor;
 let u_Size;
 let u_ModelMatrix;
@@ -112,6 +120,11 @@ function connectVariablesToGLSL() {
   a_UV = gl.getAttribLocation(gl.program, 'a_UV');
   if (a_UV < 0) {
     console.log('Failed to get the storage location of a_UV');
+    return;
+  }
+  a_Normal = gl.getAttribLocation(gl.program, 'a_Normal');
+  if (a_Normal < 0) {
+    console.log('Failed to get the storage location of a_Normal');
     return;
   }
   u_FragColor = gl.getUniformLocation(gl.program, 'u_FragColor');
@@ -222,6 +235,9 @@ let g_rightFoot = 0;
 let g_shiftClick = 0;
 let g_shiftAnimation = 0;
 
+let g_normalOn = false;
+// let g_normalOff = false;
+
 // let g_camera = new Camera(canvas);
 
 // Set up actions for the HTML UI elements
@@ -229,6 +245,10 @@ function addActionsForHtmlUI() {
   // Not needed at the moment
   // document.getElementById('animationYellowOnButton').onclick = function () { g_yellowAnimation = true; }
   // document.getElementById('animationYellowOffButton').onclick = function () { g_yellowAnimation = false; }
+  
+  document.getElementById('normalOn').onclick = function() {g_normalOn = true;}
+  document.getElementById('normalOff').onclick = function() {g_normalOn = false;}
+  
   document.getElementById('clear').onclick = function () {
     g_globalAngle = 0,
       g_upAndDown = 0,
@@ -283,7 +303,7 @@ function initTextures() {
     return false;
   }
   image2.onload = function () { sendImageToTEXTURE1(image2); }
-  image2.src = './resources/images/lava.png';
+  image2.src = './resources/images/tile.png';
 
   var image3 = new Image();
   if (!image3) {
@@ -1543,14 +1563,14 @@ function renderAllShapes() {
 
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-  drawMap();
+  // drawMap();
 
   // Draw the floor
   var body = new Cube();
   body.color = [1.0, 0.0, 0.0, 1.0];
   body.textureNum = -3;
-  body.matrix.translate(0, -40, 0.0);
-  body.matrix.scale(300, 0, 300);
+  body.matrix.translate(0, -5, 0.0);
+  body.matrix.scale(40, 0, 40);
   body.matrix.translate(-0.5, 0, -0.5);
   body.render();
 
@@ -1558,11 +1578,26 @@ function renderAllShapes() {
   var sky = new Cube();
   sky.color = [1.0, 0.0, 0.0, 1.0];
   sky.textureNum = 0;
-  sky.matrix.scale(300, 300, 300);
+  if (g_normalOn) {
+    sky.textureNum = -99;
+  }
+  sky.matrix.scale(-40, -40, -40);
   sky.matrix.translate(-0.5, -0.5, -0.5);
   sky.render();
 
+  // Draw a random cube
+  var random_cube = new Cube();
+  random_cube.color = [1.0, 1.0, 1.0, 1.0];
+  if (g_normalOn) {
+    random_cube.textureNum = -99;
+  }
+  // random_cube.textureNum = -2;
+  random_cube.matrix.scale(4,4,4);
+  random_cube.matrix.translate(-2,-1.3,-2);
+  random_cube.render();
 
+
+  /*
   // Main body
   var bmo1 = new Cube();
   bmo1.color = [112 / 255, 170 / 255, 153 / 255, 1.0];
@@ -1581,10 +1616,11 @@ function renderAllShapes() {
   bmo2.matrix.scale(.9, .5, .1);
   bmo2.matrix.translate(.05, .9, -0.01);
   bmo2.renderfast();
+  */
 
   // We do this every time between blocks to make sure a copy is being made.
   // Probably not super efficient
-
+  /*
   // Speaker on left side of BMO
   var bmo3 = new Cube();
   bmo3.matrix = new Matrix4(bmo1.matrix);
@@ -2101,6 +2137,7 @@ function renderAllShapes() {
   leftArm.matrix.rotate(-5, 1, 0, 0);
   leftArm.matrix.rotate(-g_yellowAngle, 0, 0, 1);
 
+  */
 
   // var yellowCoordinatesMat = new Matrix4(leftArm.matrix);
   // leftArm.matrix.scale(0.25, 0.7, 0.5);
