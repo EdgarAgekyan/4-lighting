@@ -1596,6 +1596,10 @@ function renderAllShapes() {
   random_cube.matrix.translate(-2,-1.3,-2);
   random_cube.render();
 
+  var random_sphere = new Sphere();
+  random_sphere.color = [1.0, 1.0, 1.0, 1.0];
+  random_sphere.render();
+
 
   /*
   // Main body
