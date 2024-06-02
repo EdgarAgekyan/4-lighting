@@ -850,6 +850,7 @@ function updateAnimationAngles() {
   if (g_shiftClick == 1) {
     g_shiftAnimation = (45 * Math.sin(g_seconds));
   }
+  g_lightPos[0] = Math.cos(g_seconds) * 5;
 }
 
 
