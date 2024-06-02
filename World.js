@@ -1598,6 +1598,10 @@ function renderAllShapes() {
 
   var random_sphere = new Sphere();
   random_sphere.color = [1.0, 1.0, 1.0, 1.0];
+  if (g_normalOn) {
+    random_sphere.textureNum = -99;
+  }
+  random_sphere.matrix.scale(10,10,10);
   random_sphere.render();
 
 
