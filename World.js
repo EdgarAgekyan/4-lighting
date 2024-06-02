@@ -1598,7 +1598,7 @@ function renderAllShapes() {
 
   var random_sphere = new Sphere();
   random_sphere.color = [1.0, 1.0, 1.0, 1.0];
-  random_sphere.textureNum = -9;
+  random_sphere.textureNum = -1;
   if (g_normalOn) {
     random_sphere.textureNum = -99;
   }
