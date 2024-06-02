@@ -7,6 +7,7 @@ var VSHADER_SOURCE = `
   attribute vec3 a_Normal;
   varying vec2 v_UV;
   varying vec3 v_Normal;
+  varying vec4 v_VertPos;
   uniform mat4 u_ModelMatrix;
   uniform mat4 u_GlobalRotateMatrix;
   uniform mat4 u_ViewMatrix;
@@ -15,6 +16,7 @@ var VSHADER_SOURCE = `
     gl_Position = u_ProjectionMatrix * u_ViewMatrix * u_GlobalRotateMatrix * u_ModelMatrix * a_Position;
     v_UV = a_UV;
     v_Normal = a_Normal;
+    v_VertPos = u_ModelMatrix * a_Position;
   }`
 
 // Fragment shader program
@@ -32,6 +34,8 @@ var FSHADER_SOURCE = `
   uniform sampler2D u_Sampler6;
   uniform sampler2D u_Sampler7;
   uniform int u_whichTexture;
+  uniform vec3 u_lightPos;
+  varying vec4 v_VertPos;
   void main() {
     if (u_whichTexture == -99) {
       gl_FragColor = vec4((v_Normal + 1.0)/2.0, 1.0);
@@ -66,6 +70,15 @@ var FSHADER_SOURCE = `
     else {
       gl_FragColor = vec4(1.0, 0.2, 0.2, 1.0); // error, put redish
     }
+
+    vec3 lightVector = vec3(v_VertPos) - u_lightPos;
+    float r = length(lightVector);
+    if (r < 5.0) {
+      gl_FragColor = vec4(1,0,0,1);
+    }
+    else if (r < 10.0) {
+      gl_FragColor = vec4(0,1,0,1);
+    }
   }`
 
 // Global Variables
@@ -91,6 +104,7 @@ let u_Sampler4;
 let u_Sampler5;
 let u_Sampler6;
 let u_Sampler7;
+let u_lightPos;
 let g_camera;
 
 function setupWebGL() {
@@ -130,6 +144,11 @@ function connectVariablesToGLSL() {
   u_FragColor = gl.getUniformLocation(gl.program, 'u_FragColor');
   if (!u_FragColor) {
     console.log('Failed to get the storage location of u_FragColor');
+    return;
+  }
+  u_lightPos = gl.getUniformLocation(gl.program, 'u_lightPos');
+  if (!u_lightPos) {
+    console.log('Failed to get the storage location of u_lightPos');
     return;
   }
   u_ModelMatrix = gl.getUniformLocation(gl.program, 'u_ModelMatrix');
@@ -238,6 +257,8 @@ let g_shiftAnimation = 0;
 let g_normalOn = false;
 // let g_normalOff = false;
 
+let g_lightPos = [0, 1, -2];
+
 // let g_camera = new Camera(canvas);
 
 // Set up actions for the HTML UI elements
@@ -248,6 +269,10 @@ function addActionsForHtmlUI() {
   
   document.getElementById('normalOn').onclick = function() {g_normalOn = true;}
   document.getElementById('normalOff').onclick = function() {g_normalOn = false;}
+
+  document.getElementById('lightSlideX').addEventListener('mousemove', function(ev) {if(ev.buttons == 1) {g_lightPos[0] = this.value/10; renderAllShapes()}})
+  document.getElementById('lightSlideY').addEventListener('mousemove', function(ev) {if(ev.buttons == 1) {g_lightPos[1] = this.value/10; renderAllShapes()}})
+  document.getElementById('lightSlideZ').addEventListener('mousemove', function(ev) {if(ev.buttons == 1) {g_lightPos[2] = this.value/10; renderAllShapes()}})
   
   document.getElementById('clear').onclick = function () {
     g_globalAngle = 0,
@@ -1565,6 +1590,16 @@ function renderAllShapes() {
 
   // drawMap();
 
+  gl.uniform3f(u_lightPos, g_lightPos[0], g_lightPos[1], g_lightPos[2]);
+
+  // Draw the light
+  var light = new Cube();
+  light.color = [2, 2, 0, 1];
+  light.matrix.translate(g_lightPos[0], g_lightPos[1], g_lightPos[2]);
+  light.matrix.scale(.4, .4, .4);
+  light.matrix.translate(-.5, 30, -.5);
+  light.render();
+
   // Draw the floor
   var body = new Cube();
   body.color = [1.0, 0.0, 0.0, 1.0];
@@ -1596,13 +1631,15 @@ function renderAllShapes() {
   random_cube.matrix.translate(-2,-1.3,-2);
   random_cube.render();
 
+  // Draw a random sphere
   var random_sphere = new Sphere();
   random_sphere.color = [1.0, 1.0, 1.0, 1.0];
   random_sphere.textureNum = -1;
   if (g_normalOn) {
     random_sphere.textureNum = -99;
   }
-  random_sphere.matrix.scale(10,10,10);
+  random_sphere.matrix.scale(3,3,3);
+  random_sphere.matrix.translate(-3, -.7, 0);
   random_sphere.render();
 
 
