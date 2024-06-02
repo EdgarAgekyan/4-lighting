@@ -359,7 +359,7 @@ function initTextures() {
     return false;
   }
   image8.onload = function () { sendImageToTEXTURE7(image8); }
-  image8.src = './resources/images/mine_water.png';
+  image8.src = './resources/images/rock.png';
 
 
 
@@ -1598,6 +1598,7 @@ function renderAllShapes() {
 
   var random_sphere = new Sphere();
   random_sphere.color = [1.0, 1.0, 1.0, 1.0];
+  random_sphere.textureNum = -9;
   if (g_normalOn) {
     random_sphere.textureNum = -99;
   }
