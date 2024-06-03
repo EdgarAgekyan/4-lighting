@@ -9,6 +9,7 @@ var VSHADER_SOURCE = `
   varying vec3 v_Normal;
   varying vec4 v_VertPos;
   uniform mat4 u_ModelMatrix;
+  uniform mat4 u_NormalMatrix;
   uniform mat4 u_GlobalRotateMatrix;
   uniform mat4 u_ViewMatrix;
   uniform mat4 u_ProjectionMatrix;
@@ -16,6 +17,7 @@ var VSHADER_SOURCE = `
     gl_Position = u_ProjectionMatrix * u_ViewMatrix * u_GlobalRotateMatrix * u_ModelMatrix * a_Position;
     v_UV = a_UV;
     v_Normal = a_Normal;
+    // v_Normal = normalize(vec3(u_NormalMatrix * vec4(a_Normal,1)));
     v_VertPos = u_ModelMatrix * a_Position;
   }`
 
@@ -33,6 +35,7 @@ var FSHADER_SOURCE = `
   uniform sampler2D u_Sampler5;
   uniform sampler2D u_Sampler6;
   uniform sampler2D u_Sampler7;
+  uniform sampler2D u_Sampler8;
   uniform int u_whichTexture;
   uniform int u_hasSpecular;
   uniform vec3 u_lightPos;
@@ -69,6 +72,9 @@ var FSHADER_SOURCE = `
     }
     else if (u_whichTexture == -9) {
       gl_FragColor = texture2D(u_Sampler7, v_UV); // use texture1
+    }
+    else if (u_whichTexture == -10) {
+      gl_FragColor = texture2D(u_Sampler8, v_UV); // use texture1
     }
     else {
       gl_FragColor = vec4(1.0, 0.2, 0.2, 1.0); // error, put redish
@@ -153,11 +159,13 @@ let u_Sampler4;
 let u_Sampler5;
 let u_Sampler6;
 let u_Sampler7;
+let u_Sampler8;
 let u_lightPos;
 let u_cameraPos;
 let g_camera;
 let u_hasSpecular;
 let u_lightOn;
+let u_NormalMatrix;
 
 function setupWebGL() {
   // Retrieve <canvas> element
@@ -268,6 +276,11 @@ function connectVariablesToGLSL() {
     console.log('Failed to get the storage location of u_Sampler7');
     return;
   }
+  u_Sampler8 = gl.getUniformLocation(gl.program, 'u_Sampler8');
+  if (!u_Sampler8) {
+    console.log('Failed to get the storage location of u_Sampler8');
+    return;
+  }
   u_whichTexture = gl.getUniformLocation(gl.program, 'u_whichTexture');
   if (!u_whichTexture) {
     console.log('Failed to get the storage location of u_whichTexture');
@@ -281,6 +294,11 @@ function connectVariablesToGLSL() {
   u_lightOn = gl.getUniformLocation(gl.program, 'u_lightOn');
   if (!u_lightOn) {
     console.log('Failed to get the storage location of u_lightOn');
+    return;
+  }
+  u_NormalMatrix = gl.getUniformLocation(gl.program, 'u_NormalMatrix');
+  if (!u_NormalMatrix) {
+    console.log('Failed to get the storage location of u_NormalMatrix');
     return;
   }
   var identityM = new Matrix4();
@@ -399,7 +417,7 @@ function initTextures() {
     return false;
   }
   image2.onload = function () { sendImageToTEXTURE1(image2); }
-  image2.src = './resources/images/tile.png';
+  image2.src = './resources/images/mine_ground.png';
 
   var image3 = new Image();
   if (!image3) {
@@ -456,6 +474,15 @@ function initTextures() {
   }
   image8.onload = function () { sendImageToTEXTURE7(image8); }
   image8.src = './resources/images/rock.png';
+
+
+  var image9 = new Image();
+  if (!image9) {
+    console.log('Failed to create the image object');
+    return false;
+  }
+  image9.onload = function () { sendImageToTEXTURE8(image9); }
+  image9.src = './resources/images/mine_water.png';
 
 
 
@@ -578,6 +605,21 @@ function sendImageToTEXTURE7(image) {
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
   gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, image);
   gl.uniform1i(u_Sampler7, 7);
+  console.log('finished loadTexture');
+}
+
+function sendImageToTEXTURE8(image) {
+  let anotherTexture = gl.createTexture();
+  if (!anotherTexture) {
+    console.log('Failed to create the anotherTexture object');
+    return false;
+  }
+  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 1);
+  gl.activeTexture(gl.TEXTURE8);
+  gl.bindTexture(gl.TEXTURE_2D, anotherTexture);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, image);
+  gl.uniform1i(u_Sampler8, 8);
   console.log('finished loadTexture');
 }
 
@@ -1307,28 +1349,28 @@ function drawMap() {
   var body = new Cube();
 
   // layer 1
-  for (var x = 0; x < base_bottom1.length; x++) {
-    for (var y = 0; y < base_bottom2.length; y++) {
-      if (base_bottom1[x][y] == 1) {
-        body.textureNum = -5;
-        body.matrix.setTranslate(0, -1, 0);
-        body.color = [1.0, 1.0, 1.0, 1.0];
-        body.matrix.scale(3, 3, 3);
-        body.matrix.translate(x - 10, -0.75, y - 11);
-        body.renderfaster();
-      }
-      else if (base_bottom2[x][y] == 1) {
-        body.textureNum = -4;
-        body.matrix.setTranslate(0, -1, 0);
-        body.color = [1.0, 1.0, 1.0, 1.0];
-        // body.matrix.scale(3, 3, 3);
-        body.matrix.scale(3, 3, 3);
-        body.matrix.translate(x - 10, -0.75, y - 11);
-        body.renderfaster();
-      }
+  // for (var x = 0; x < base_bottom1.length; x++) {
+  //   for (var y = 0; y < base_bottom2.length; y++) {
+  //     if (base_bottom1[x][y] == 1) {
+  //       body.textureNum = -5;
+  //       body.matrix.setTranslate(0, -1, 0);
+  //       body.color = [1.0, 1.0, 1.0, 1.0];
+  //       body.matrix.scale(3, 3, 3);
+  //       body.matrix.translate(x - 10, -0.75, y - 11);
+  //       body.render();
+  //     }
+  //     else if (base_bottom2[x][y] == 1) {
+  //       body.textureNum = -4;
+  //       body.matrix.setTranslate(0, -1, 0);
+  //       body.color = [1.0, 1.0, 1.0, 1.0];
+  //       // body.matrix.scale(3, 3, 3);
+  //       body.matrix.scale(3, 3, 3);
+  //       body.matrix.translate(x - 10, -0.75, y - 11);
+  //       body.render();
+  //     }
       
-    }
-  }
+  //   }
+  // }
 
   // layer 2
   for (var x = 0; x < layer1.length; x++) {
@@ -1337,28 +1379,37 @@ function drawMap() {
         body.textureNum = -6;
         body.matrix.setTranslate(0, -1, 0);
         body.color = [1.0, 1.0, 1.0, 1.0];
+        if (g_normalOn) {
+          body.textureNum = -99;
+        }
         // body.matrix.scale(3, 3, 3);
         body.matrix.scale(3, 3, 3);
         body.matrix.translate(x - 10, .25, y - 11);
-        body.renderfaster();
+        body.render();
       }
       else if (layer1_2[x][y] == 1) {
         body.textureNum = -8;
         body.matrix.setTranslate(0, -1, 0);
         body.color = [1.0, 1.0, 1.0, 1.0];
+        if (g_normalOn) {
+          body.textureNum = -99;
+        }
         // body.matrix.scale(3, 3, 3);
         body.matrix.scale(3, 3, 3);
         body.matrix.translate(x - 10, .25, y - 11);
-        body.renderfaster();
+        body.render();
       }
       else if (layer1_4[x][y] == 1) {
-        body.textureNum = -9;
+        body.textureNum = -10;
         body.matrix.setTranslate(0, -1, 0);
         body.color = [1.0, 1.0, 1.0, 1.0];
+        if (g_normalOn) {
+          body.textureNum = -99;
+        }
         // body.matrix.scale(3, 3, 3);
         body.matrix.scale(3, 3, 3);
         body.matrix.translate(x - 10, .25, y - 11);
-        body.renderfaster();
+        body.render();
       }
       
     }
@@ -1371,10 +1422,13 @@ function drawMap() {
         body.textureNum = -6;
         body.matrix.setTranslate(0, -1, 0);
         body.color = [1.0, 1.0, 1.0, 1.0];
+        if (g_normalOn) {
+          body.textureNum = -99;
+        }
         // body.matrix.scale(3, 3, 3);
         body.matrix.scale(3, 3, 3);
         body.matrix.translate(x - 10, 1.25, y - 11);
-        body.renderfaster();
+        body.render();
       }
       
     }
@@ -1387,10 +1441,13 @@ function drawMap() {
           body.textureNum = -6;
           body.matrix.setTranslate(0, -1, 0);
           body.color = [1.0, 1.0, 1.0, 1.0];
+          if (g_normalOn) {
+          body.textureNum = -99;
+        }
           // body.matrix.scale(3, 3, 3);
           body.matrix.scale(3, 3, 3);
           body.matrix.translate(x - 10, 2.25, y - 11);
-          body.renderfaster();
+          body.render();
         }
         
         
@@ -1404,19 +1461,25 @@ function drawMap() {
         body.textureNum = -6;
         body.matrix.setTranslate(0, -1, 0);
         body.color = [1.0, 1.0, 1.0, 1.0];
+        if (g_normalOn) {
+          body.textureNum = -99;
+        }
         // body.matrix.scale(3, 3, 3);
         body.matrix.scale(3, 3, 3);
         body.matrix.translate(x - 10, 3.25, y - 11);
-        body.renderfaster();
+        body.render();
       }
       else if (layer4_2[x][y] == 1) {
         body.textureNum = -7;
         body.matrix.setTranslate(0, -1, 0);
         body.color = [1.0, 1.0, 1.0, 1.0];
+        if (g_normalOn) {
+          body.textureNum = -99;
+        }
         // body.matrix.scale(3, 3, 3);
         body.matrix.scale(3, 3, 3);
         body.matrix.translate(x - 10, 3.25, y - 11);
-        body.renderfaster();
+        body.render();
       }
       
       
@@ -1429,19 +1492,25 @@ function drawMap() {
         body.textureNum = -6;
         body.matrix.setTranslate(0, -1, 0);
         body.color = [1.0, 1.0, 1.0, 1.0];
+        if (g_normalOn) {
+          body.textureNum = -99;
+        }
         // body.matrix.scale(3, 3, 3);
         body.matrix.scale(3, 3, 3);
         body.matrix.translate(x - 10, 4.25, y - 11);
-        body.renderfaster();
+        body.render();
       }
       else if (layer5_2[x][y] == 1) {
         body.textureNum = -7;
         body.matrix.setTranslate(0, -1, 0);
         body.color = [1.0, 1.0, 1.0, 1.0];
+        if (g_normalOn) {
+          body.textureNum = -99;
+        }
         // body.matrix.scale(3, 3, 3);
         body.matrix.scale(3, 3, 3);
         body.matrix.translate(x - 10, 4.25, y - 11);
-        body.renderfaster();
+        body.render();
       }
       
     }
@@ -1453,19 +1522,25 @@ function drawMap() {
         body.textureNum = -6;
         body.matrix.setTranslate(0, -1, 0);
         body.color = [1.0, 1.0, 1.0, 1.0];
+        if (g_normalOn) {
+          body.textureNum = -99;
+        }
         // body.matrix.scale(3, 3, 3);
         body.matrix.scale(3, 3, 3);
         body.matrix.translate(x - 10, 5.25, y - 11);
-        body.renderfaster();
+        body.render();
       }
       else if (layer6_2[x][y] == 1) {
         body.textureNum = -7;
         body.matrix.setTranslate(0, -1, 0);
         body.color = [1.0, 1.0, 1.0, 1.0];
+        if (g_normalOn) {
+          body.textureNum = -99;
+        }
         // body.matrix.scale(3, 3, 3);
         body.matrix.scale(3, 3, 3);
         body.matrix.translate(x - 10, 5.25, y - 11);
-        body.renderfaster();
+        body.render();
       }
       
     }
@@ -1478,19 +1553,25 @@ function drawMap() {
         body.textureNum = -6;
         body.matrix.setTranslate(0, -1, 0);
         body.color = [1.0, 1.0, 1.0, 1.0];
+        if (g_normalOn) {
+          body.textureNum = -99;
+        }
         // body.matrix.scale(3, 3, 3);
         body.matrix.scale(3, 3, 3);
         body.matrix.translate(x - 10, 6.25, y - 11);
-        body.renderfaster();
+        body.render();
       }
       else if (layer7_2[x][y] == 1) {
         body.textureNum = -7;
         body.matrix.setTranslate(0, -1, 0);
         body.color = [1.0, 1.0, 1.0, 1.0];
+        if (g_normalOn) {
+          body.textureNum = -99;
+        }
         // body.matrix.scale(3, 3, 3);
         body.matrix.scale(3, 3, 3);
         body.matrix.translate(x - 10, 6.25, y - 11);
-        body.renderfaster();
+        body.render();
       }
       
     }
@@ -1499,51 +1580,6 @@ function drawMap() {
 
 }
 
-
-
-// var g_map = [
-//   [1, 0, 1, 0, 1, 0, 1, 0],
-//   [0, 1, 0, 1, 0, 1, 0, 1],
-//   [1, 0, 1, 0, 1, 0, 1, 0],
-//   [0, 1, 0, 1, 0, 1, 0, 1],
-//   [1, 0, 1, 0, 1, 0, 1, 0],
-//   [0, 1, 0, 1, 0, 1, 0, 1],
-//   [1, 0, 1, 0, 1, 0, 1, 0],
-//   [0, 1, 0, 1, 0, 1, 0, 1],
-// ]
-// var g_map2 = [
-//   [0, 1, 0, 1, 0, 1, 0, 1],
-//   [1, 0, 1, 0, 1, 0, 1, 0],
-//   [0, 1, 0, 1, 0, 1, 0, 1],
-//   [1, 0, 1, 0, 1, 0, 1, 0],
-//   [0, 1, 0, 1, 0, 1, 0, 1],
-//   [1, 0, 1, 0, 1, 0, 1, 0],
-//   [0, 1, 0, 1, 0, 1, 0, 1],
-//   [1, 0, 1, 0, 1, 0, 1, 0],
-// ]
-
-
-// function drawMap() {
-//   var body = new Cube();
-//   for (x = 0; x < 8; x++) {
-//     for (y = 0; y < 8; y++) {
-//       if (g_map[x][y] == 1) {
-//         body.matrix.setTranslate(0, -1, 0);
-//         body.color = [1.0, 1.0, 1.0, 1.0];
-//         body.matrix.scale(3, 3, 3);
-//         body.matrix.translate(x - 4, -0.75, y - 4);
-//         body.renderfaster();
-//       }
-//       else if (g_map2[x][y] == 1) {
-//         body.matrix.setTranslate(0, -1, 0);
-//         body.color = [0.0, 0.0, 0.0, 1.0];
-//         body.matrix.scale(3, 3, 3);
-//         body.matrix.translate(x - 4, -0.75, y - 4);
-//         body.renderfaster();
-//       }
-//     }
-//   }
-// }
 
 // Made this function myself. Now ChatGPT is telling me a good idea may be to
 // get a distance first and then use a stepping size to find the nearest block.
@@ -1590,50 +1626,6 @@ function mapCollision(vec) {
   return false;
 }
 
-// Template to use as reference:
-// g_camera = new Camera();
-// var g_map = [
-//   [1, 1, 1, 1, 1, 1, 1, 1],
-//   [1, 0, 0, 0, 0, 0, 0, 1],
-//   [1, 0, 0, 0, 0, 0, 0, 1],
-//   [1, 0, 0, 1, 1, 0, 0, 1],
-//   [1, 0, 0, 0, 0, 0, 0, 1],
-//   [1, 0, 0, 0, 0, 0, 0, 1],
-//   [1, 0, 0, 0, 1, 0, 0, 1],
-//   [1, 0, 0, 0, 0, 0, 0, 1],
-// ]
-
-// function drawMap() {
-//   var body = new Cube();
-//   for (x = 0; x < 8; x++) {
-//     for (y = 0; y < 8; y++) {
-//       if (g_map[x][y] == 1) {
-//         body.matrix.setTranslate(0, -1, 0);
-//         body.color = [1.0, 1.0, 1.0, 1.0];
-//         body.matrix.translate(x-4, -0.75, y-4);
-//         body.render();
-//       }
-//     }
-//   }
-// }
-
-
-// var body = new Cube();
-// body.textureNum = -3; // setting texture
-// for (i = 0; i < 2; i++) {
-//   for (x = 0; x < 32; x++) {
-//     for (y = 0; y < 32; y++)  {
-//       body.color = [0.8, 1.0, 1.0, 1.0];
-//       body.textureNum = -3;
-//       body.matrix.setTranslate(0, -0.75, 0);
-//       body.matrix.scale(1, 1, 1);
-//       body.matrix.translate(x-16, 0, y-16);
-//       body.renderfaster();
-//     }
-//   }
-// }
-
-
 
 function renderAllShapes() {
 
@@ -1660,7 +1652,7 @@ function renderAllShapes() {
 
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-  // drawMap();
+  drawMap();
 
   gl.uniform3f(u_lightPos, g_lightPos[0], g_lightPos[1], g_lightPos[2]);
 
@@ -1682,8 +1674,11 @@ function renderAllShapes() {
   body.color = [1.0, 0.0, 0.0, 1.0];
   body.updateSpecular(0);
   body.textureNum = -3;
-  body.matrix.translate(0, -5, 0.0);
-  body.matrix.scale(40, 1, 40);
+  if (g_normalOn) {
+    body.textureNum = -99;
+  }
+  body.matrix.translate(0, -1.2, 0.0);
+  body.matrix.scale(80, 1, 80);
   body.matrix.translate(-0.5, 0, -0.5);
   body.render();
 
@@ -1695,30 +1690,32 @@ function renderAllShapes() {
   if (g_normalOn) {
     sky.textureNum = -99;
   }
-  sky.matrix.scale(-40, -40, -40);
+  sky.matrix.scale(-100, -100, -100);
   sky.matrix.translate(-0.5, -0.5, -0.5);
   sky.render();
 
   // Draw a random cube
   var random_cube = new Cube();
-  random_cube.color = [1.0, 1.0, 1.0, 1.0];
+  random_cube.color = [1.0, 0, .4, 1.0];
   if (g_normalOn) {
     random_cube.textureNum = -99;
   }
   // random_cube.textureNum = -2;
   random_cube.matrix.scale(4,4,4);
-  random_cube.matrix.translate(-2,-1,-2);
+  random_cube.matrix.translate(-2,0,-2);
+  // For fixing normals
+  random_cube.normalMatrix.setInverseOf(random_cube.matrix).transpose();
   random_cube.render();
 
   // Draw a random sphere
   var random_sphere = new Sphere();
   random_sphere.color = [1.0, 1.0, 1.0, 1.0];
-  random_sphere.textureNum = -1;
+  random_sphere.textureNum = -2;
   if (g_normalOn) {
     random_sphere.textureNum = -99;
   }
   random_sphere.matrix.scale(3,3,3);
-  random_sphere.matrix.translate(-3, -.2, 0);
+  random_sphere.matrix.translate(-3, .9, 0);
   random_sphere.render();
 
 
