@@ -38,6 +38,7 @@ var FSHADER_SOURCE = `
   uniform vec3 u_lightPos;
   uniform vec3 u_cameraPos;
   varying vec4 v_VertPos;
+  uniform bool u_lightOn;
   void main() {
     if (u_whichTexture == -99) {
       gl_FragColor = vec4((v_Normal + 1.0)/2.0, 1.0);
@@ -93,7 +94,19 @@ var FSHADER_SOURCE = `
 
     vec3 diffuse = vec3(gl_FragColor) * nDotL * 0.7;
     vec3 ambient = vec3(gl_FragColor) * 0.3;
-    gl_FragColor = vec4(specular + diffuse + ambient, 1.0);
+
+    if (u_lightOn) {
+      gl_FragColor = vec4(specular + diffuse + ambient, 1.0);
+      // if (u_whichTexture == 0) {
+      //   gl_FragColor = vec4(specular + diffuse + ambient, 1.0);
+      // }
+      // else {
+      //   gl_FragColor = vec4(diffuse + ambient, 1.0);
+      // }
+    }
+
+
+    // gl_FragColor = vec4(specular + diffuse + ambient, 1.0);
 
     // vec3 diffuse = vec3(gl_FragColor) * nDotL;
     // vec3 ambient = vec3(gl_FragColor) * 0.3;
@@ -143,7 +156,8 @@ let u_Sampler7;
 let u_lightPos;
 let u_cameraPos;
 let g_camera;
-let u_hasSpecular
+let u_hasSpecular;
+let u_lightOn;
 
 function setupWebGL() {
   // Retrieve <canvas> element
@@ -264,6 +278,11 @@ function connectVariablesToGLSL() {
     console.log('Failed to get the storage location of u_hasSpecular');
     return;
   }
+  u_lightOn = gl.getUniformLocation(gl.program, 'u_lightOn');
+  if (!u_lightOn) {
+    console.log('Failed to get the storage location of u_lightOn');
+    return;
+  }
   var identityM = new Matrix4();
   gl.uniformMatrix4fv(u_ModelMatrix, false, identityM.elements);
 }
@@ -307,6 +326,7 @@ let g_normalOn = false;
 
 let g_lightPos = [-15, 10, -9];
 
+let g_lightOn = true;
 // let g_camera = new Camera(canvas);
 
 // Set up actions for the HTML UI elements
@@ -318,31 +338,34 @@ function addActionsForHtmlUI() {
   document.getElementById('normalOn').onclick = function() {g_normalOn = true;}
   document.getElementById('normalOff').onclick = function() {g_normalOn = false;}
 
+  document.getElementById('lightOn').onclick = function() {g_lightOn = true;}
+  document.getElementById('lightOff').onclick = function() {g_lightOn = false;}
+
   document.getElementById('lightSlideX').addEventListener('mousemove', function(ev) {if(ev.buttons == 1) {g_lightPos[0] = this.value/10; renderAllShapes()}})
   document.getElementById('lightSlideY').addEventListener('mousemove', function(ev) {if(ev.buttons == 1) {g_lightPos[1] = this.value/10; renderAllShapes()}})
   document.getElementById('lightSlideZ').addEventListener('mousemove', function(ev) {if(ev.buttons == 1) {g_lightPos[2] = this.value/10; renderAllShapes()}})
   
-  document.getElementById('clear').onclick = function () {
-    g_globalAngle = 0,
-      g_upAndDown = 0,
-      document.getElementById('angleSlide1').value = 0,
-      document.getElementById('angleSlide2').value = 0;
-    x = 0;
-    y = 0;
-    x_rot = 0;
-    y_rot = 0,
-      g_leftArm = 0,
-      g_leftHand = 0,
-      g_rightArm = 0,
-      g_rightHand = 0;
-    g_leftLeg = 0,
-      g_leftFoot = 0,
-      g_rightLeg = 0,
-      g_rightFoot = 0;
-    g_shiftClick = 0;
-    g_shiftAnimation = 0,
-      g_yellowAngle = 0;
-  }
+  // document.getElementById('clear').onclick = function () {
+  //   g_globalAngle = 0,
+  //     g_upAndDown = 0,
+  //     document.getElementById('angleSlide1').value = 0,
+  //     document.getElementById('angleSlide2').value = 0;
+  //   x = 0;
+  //   y = 0;
+  //   x_rot = 0;
+  //   y_rot = 0,
+  //     g_leftArm = 0,
+  //     g_leftHand = 0,
+  //     g_rightArm = 0,
+  //     g_rightHand = 0;
+  //   g_leftLeg = 0,
+  //     g_leftFoot = 0,
+  //     g_rightLeg = 0,
+  //     g_rightFoot = 0;
+  //   g_shiftClick = 0;
+  //   g_shiftAnimation = 0,
+  //     g_yellowAngle = 0;
+  // }
 
   // Not needed at the moment
   // document.getElementById('angleSlide1').addEventListener('mousemove', function () { g_globalAngle = this.value; renderAllShapes(); });
@@ -1642,6 +1665,8 @@ function renderAllShapes() {
   gl.uniform3f(u_lightPos, g_lightPos[0], g_lightPos[1], g_lightPos[2]);
 
   gl.uniform3f(u_cameraPos, g_camera.eye.elements[0], g_camera.eye.elements[1], g_camera.eye.elements[2]);
+
+  gl.uniform1i(u_lightOn, g_lightOn);
 
   // Draw the light
   var light = new Cube();
