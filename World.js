@@ -35,6 +35,7 @@ var FSHADER_SOURCE = `
   uniform sampler2D u_Sampler7;
   uniform int u_whichTexture;
   uniform vec3 u_lightPos;
+  uniform vec3 u_cameraPos;
   varying vec4 v_VertPos;
   void main() {
     if (u_whichTexture == -99) {
@@ -78,9 +79,21 @@ var FSHADER_SOURCE = `
     vec3 N = normalize(v_Normal);
     float nDotL = max(dot(N, L), 0.0);
 
-    vec3 diffuse = vec3(gl_FragColor) * nDotL;
+    // Reflection
+    vec3 R = reflect(-L, N);
+
+    // eye
+    vec3 E = normalize(u_cameraPos - vec3(v_VertPos));
+
+    float specular = pow(max(dot(E, R), 0.0), 10.0);
+
+    vec3 diffuse = vec3(gl_FragColor) * nDotL * 0.7;
     vec3 ambient = vec3(gl_FragColor) * 0.3;
-    gl_FragColor = vec4(diffuse + ambient, 1.0);
+    gl_FragColor = vec4(specular + diffuse + ambient, 1.0);
+
+    // vec3 diffuse = vec3(gl_FragColor) * nDotL;
+    // vec3 ambient = vec3(gl_FragColor) * 0.3;
+    // gl_FragColor = vec4(diffuse + ambient, 1.0);
 
 
     // gl_FragColor = gl_FragColor * nDotL;
@@ -124,6 +137,7 @@ let u_Sampler5;
 let u_Sampler6;
 let u_Sampler7;
 let u_lightPos;
+let u_cameraPos;
 let g_camera;
 
 function setupWebGL() {
@@ -168,6 +182,11 @@ function connectVariablesToGLSL() {
   u_lightPos = gl.getUniformLocation(gl.program, 'u_lightPos');
   if (!u_lightPos) {
     console.log('Failed to get the storage location of u_lightPos');
+    return;
+  }
+  u_cameraPos = gl.getUniformLocation(gl.program, 'u_cameraPos');
+  if (!u_cameraPos) {
+    console.log('Failed to get the storage location of u_cameraPos');
     return;
   }
   u_ModelMatrix = gl.getUniformLocation(gl.program, 'u_ModelMatrix');
@@ -276,7 +295,7 @@ let g_shiftAnimation = 0;
 let g_normalOn = false;
 // let g_normalOff = false;
 
-let g_lightPos = [3, 10, 3];
+let g_lightPos = [-15, 10, -9];
 
 // let g_camera = new Camera(canvas);
 
@@ -869,7 +888,7 @@ function updateAnimationAngles() {
   if (g_shiftClick == 1) {
     g_shiftAnimation = (45 * Math.sin(g_seconds));
   }
-  g_lightPos[0] = Math.cos(g_seconds) * 5;
+  // g_lightPos[0] = Math.cos(g_seconds) * 5;
 }
 
 
@@ -1612,6 +1631,8 @@ function renderAllShapes() {
 
   gl.uniform3f(u_lightPos, g_lightPos[0], g_lightPos[1], g_lightPos[2]);
 
+  gl.uniform3f(u_cameraPos, g_camera.eye.elements[0], g_camera.eye.elements[1], g_camera.eye.elements[2]);
+
   // Draw the light
   var light = new Cube();
   light.color = [2, 2, 0, 1];
@@ -1649,7 +1670,7 @@ function renderAllShapes() {
   }
   // random_cube.textureNum = -2;
   random_cube.matrix.scale(4,4,4);
-  random_cube.matrix.translate(-2,-1.3,-2);
+  random_cube.matrix.translate(-2,-1,-2);
   random_cube.render();
 
   // Draw a random sphere
@@ -1660,7 +1681,7 @@ function renderAllShapes() {
     random_sphere.textureNum = -99;
   }
   random_sphere.matrix.scale(3,3,3);
-  random_sphere.matrix.translate(-3, -.7, 0);
+  random_sphere.matrix.translate(-3, -.2, 0);
   random_sphere.render();
 
 
