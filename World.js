@@ -106,21 +106,18 @@ var FSHADER_SOURCE = `
       gl_FragColor = vec4(specular + diffuse + ambient, 1.0);
     }
 
-
-
-
-
-    // Kind of works?
-    vec3 lightVector2 = u_spotPos - vec3(v_VertPos);
-    float rr = length(lightVector2);
-    float nDotL2 = max(dot(normalize(lightVector2), normalize(v_Normal)), 0.0); 
-    float intensityScale = 10.0;
-    nDotL2 *= intensityScale;
-    nDotL2 = clamp(nDotL2, 0.0, 1.0);
+    // Code for spotlight... doesn't work yet
+    // vec3 lightVector2 = u_spotPos - vec3(v_VertPos);
+    // float rr = length(lightVector2);
+    // float nDotL2 = max(dot(normalize(lightVector2), normalize(v_Normal)), 0.0); 
+    // float intensityScale = 10.0;
+    // nDotL2 *= intensityScale;
+    // nDotL2 = clamp(nDotL2, 0.0, 1.0);
     
-    gl_FragColor *= nDotL2;
-    gl_FragColor.a = 1.0;
+    // gl_FragColor *= nDotL2;
+    // gl_FragColor.a = 1.0;
 
+    // gl_FragColor *= vec4(vec3(gl_FragColor) * spotIntensity, 1.0);
 
   }`
 
@@ -200,11 +197,11 @@ function connectVariablesToGLSL() {
     console.log('Failed to get the storage location of u_lightPos');
     return;
   }
-  u_spotPos = gl.getUniformLocation(gl.program, 'u_spotPos');
-  if (!u_spotPos) {
-    console.log('Failed to get the storage location of u_spotPos');
-    return;
-  }
+  // u_spotPos = gl.getUniformLocation(gl.program, 'u_spotPos');
+  // if (!u_spotPos) {
+  //   console.log('Failed to get the storage location of u_spotPos');
+  //   return;
+  // }
   u_cameraPos = gl.getUniformLocation(gl.program, 'u_cameraPos');
   if (!u_cameraPos) {
     console.log('Failed to get the storage location of u_cameraPos');
