@@ -1655,6 +1655,7 @@ function renderAllShapes() {
   // Draw the floor
   var body = new Cube();
   body.color = [1.0, 0.0, 0.0, 1.0];
+  body.updateSpecular(0);
   body.textureNum = -3;
   body.matrix.translate(0, -5, 0.0);
   body.matrix.scale(40, 1, 40);
