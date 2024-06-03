@@ -4,6 +4,8 @@ class Cube {
         this.color = [1.0, 1.0, 1.0, 1.0];
         this.matrix = new Matrix4();
         this.textureNum = -2;
+        this.hasSpecular = 1;
+        gl.uniform1i(u_hasSpecular, this.hasSpecular);
 
         // this.cubeVerts32 = new Float32Array([
         //     0, 0, 0, 1, 1, 0, 1, 0, 0,
@@ -133,6 +135,12 @@ class Cube {
         //     1,0, 1,1, 1,1
         // ];
     }
+
+    updateSpecular(x) {
+        this.hasSpecular = x;
+        gl.uniform1i(u_hasSpecular, this.hasSpecular);
+    }
+
     render() {
         var rgba = this.color;
 

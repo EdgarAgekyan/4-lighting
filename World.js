@@ -34,6 +34,7 @@ var FSHADER_SOURCE = `
   uniform sampler2D u_Sampler6;
   uniform sampler2D u_Sampler7;
   uniform int u_whichTexture;
+  uniform int u_hasSpecular;
   uniform vec3 u_lightPos;
   uniform vec3 u_cameraPos;
   varying vec4 v_VertPos;
@@ -84,8 +85,11 @@ var FSHADER_SOURCE = `
 
     // eye
     vec3 E = normalize(u_cameraPos - vec3(v_VertPos));
+    float specular = 0.0;
 
-    float specular = pow(max(dot(E, R), 0.0), 10.0);
+    if (u_hasSpecular == 1) {
+      specular = pow(max(dot(E, R), 0.0), 10.0);
+    }
 
     vec3 diffuse = vec3(gl_FragColor) * nDotL * 0.7;
     vec3 ambient = vec3(gl_FragColor) * 0.3;
@@ -139,6 +143,7 @@ let u_Sampler7;
 let u_lightPos;
 let u_cameraPos;
 let g_camera;
+let u_hasSpecular
 
 function setupWebGL() {
   // Retrieve <canvas> element
@@ -252,6 +257,11 @@ function connectVariablesToGLSL() {
   u_whichTexture = gl.getUniformLocation(gl.program, 'u_whichTexture');
   if (!u_whichTexture) {
     console.log('Failed to get the storage location of u_whichTexture');
+    return;
+  }
+  u_hasSpecular = gl.getUniformLocation(gl.program, 'u_hasSpecular');
+  if (!u_hasSpecular) {
+    console.log('Failed to get the storage location of u_hasSpecular');
     return;
   }
   var identityM = new Matrix4();
@@ -1654,6 +1664,7 @@ function renderAllShapes() {
   // Draw the sky
   var sky = new Cube();
   sky.color = [1.0, 0.0, 0.0, 1.0];
+  sky.updateSpecular(0);
   sky.textureNum = 0;
   if (g_normalOn) {
     sky.textureNum = -99;
