@@ -342,9 +342,11 @@ let g_shiftAnimation = 0;
 let g_normalOn = false;
 // let g_normalOff = false;
 
-let g_lightPos = [-15, 10, -9];
+let g_lightPos = [-15, 30, -9];
 
 let g_lightOn = true;
+
+let g_animation = true;
 // let g_camera = new Camera(canvas);
 
 // Set up actions for the HTML UI elements
@@ -358,6 +360,10 @@ function addActionsForHtmlUI() {
 
   document.getElementById('lightOn').onclick = function() {g_lightOn = true;}
   document.getElementById('lightOff').onclick = function() {g_lightOn = false;}
+
+  document.getElementById('animationOn').onclick = function() {g_animation = true;}
+  document.getElementById('animationOff').onclick = function() {g_animation = false;}
+
 
   document.getElementById('lightSlideX').addEventListener('mousemove', function(ev) {if(ev.buttons == 1) {g_lightPos[0] = this.value/10; renderAllShapes()}})
   document.getElementById('lightSlideY').addEventListener('mousemove', function(ev) {if(ev.buttons == 1) {g_lightPos[1] = this.value/10; renderAllShapes()}})
@@ -962,6 +968,10 @@ function updateAnimationAngles() {
   }
   if (g_shiftClick == 1) {
     g_shiftAnimation = (45 * Math.sin(g_seconds));
+  }
+  if (g_animation) {
+    g_lightPos[2] = 30 * Math.cos(g_seconds);
+    g_lightPos[0] = 30 * Math.cos(g_seconds);
   }
   // g_lightPos[0] = Math.cos(g_seconds) * 5;
 }
