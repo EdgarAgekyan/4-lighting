@@ -39,6 +39,7 @@ var FSHADER_SOURCE = `
   uniform int u_whichTexture;
   uniform int u_hasSpecular;
   uniform vec3 u_lightPos;
+  uniform vec3 u_spotPos;
   uniform vec3 u_cameraPos;
   varying vec4 v_VertPos;
   uniform bool u_lightOn;
@@ -103,36 +104,23 @@ var FSHADER_SOURCE = `
 
     if (u_lightOn) {
       gl_FragColor = vec4(specular + diffuse + ambient, 1.0);
-      // if (u_whichTexture == 0) {
-      //   gl_FragColor = vec4(specular + diffuse + ambient, 1.0);
-      // }
-      // else {
-      //   gl_FragColor = vec4(diffuse + ambient, 1.0);
-      // }
     }
 
 
-    // gl_FragColor = vec4(specular + diffuse + ambient, 1.0);
-
-    // vec3 diffuse = vec3(gl_FragColor) * nDotL;
-    // vec3 ambient = vec3(gl_FragColor) * 0.3;
-    // gl_FragColor = vec4(diffuse + ambient, 1.0);
 
 
-    // gl_FragColor = gl_FragColor * nDotL;
-    // gl_FragColor.a = 1.0;
 
-
+    // Kind of works?
+    vec3 lightVector2 = u_spotPos - vec3(v_VertPos);
+    float rr = length(lightVector2);
+    float nDotL2 = max(dot(normalize(lightVector2), normalize(v_Normal)), 0.0); 
+    float intensityScale = 10.0;
+    nDotL2 *= intensityScale;
+    nDotL2 = clamp(nDotL2, 0.0, 1.0);
     
-    // gl_FragColor = vec4(vec3(gl_FragColor)/(r*r),1);
+    gl_FragColor *= nDotL2;
+    gl_FragColor.a = 1.0;
 
-
-    // if (r < 5.0) {
-    //   gl_FragColor = vec4(1,0,0,1);
-    // }
-    // else if (r < 10.0) {
-    //   gl_FragColor = vec4(0,1,0,1);
-    // }
 
   }`
 
@@ -161,6 +149,7 @@ let u_Sampler6;
 let u_Sampler7;
 let u_Sampler8;
 let u_lightPos;
+let u_spotPos;
 let u_cameraPos;
 let g_camera;
 let u_hasSpecular;
@@ -209,6 +198,11 @@ function connectVariablesToGLSL() {
   u_lightPos = gl.getUniformLocation(gl.program, 'u_lightPos');
   if (!u_lightPos) {
     console.log('Failed to get the storage location of u_lightPos');
+    return;
+  }
+  u_spotPos = gl.getUniformLocation(gl.program, 'u_spotPos');
+  if (!u_spotPos) {
+    console.log('Failed to get the storage location of u_spotPos');
     return;
   }
   u_cameraPos = gl.getUniformLocation(gl.program, 'u_cameraPos');
@@ -343,6 +337,7 @@ let g_normalOn = false;
 // let g_normalOff = false;
 
 let g_lightPos = [-15, 30, -9];
+let g_spotPos = [-20,4, -20];
 
 let g_lightOn = true;
 
@@ -1666,6 +1661,10 @@ function renderAllShapes() {
 
   gl.uniform3f(u_lightPos, g_lightPos[0], g_lightPos[1], g_lightPos[2]);
 
+  // FOR SPOTLIGHT:
+  gl.uniform3f(u_spotPos, g_spotPos[0], g_spotPos[1], g_spotPos[2]);
+
+
   gl.uniform3f(u_cameraPos, g_camera.eye.elements[0], g_camera.eye.elements[1], g_camera.eye.elements[2]);
 
   gl.uniform1i(u_lightOn, g_lightOn);
@@ -1679,6 +1678,15 @@ function renderAllShapes() {
   // light.matrix.translate(-.5, 30, -.5);
   light.render();
 
+  // Draw the SpotLight
+  var spotlight = new Cube();
+  spotlight.color = [2, 2, 0, 1];
+  spotlight.matrix.translate(g_spotPos[0], g_spotPos[1], g_spotPos[2]);
+  spotlight.matrix.scale(-.4, -.4, -.4);
+  spotlight.matrix.translate(-.5,-.5,-.5);
+  spotlight.render();
+
+    
   // Draw the floor
   var body = new Cube();
   body.color = [1.0, 0.0, 0.0, 1.0];
